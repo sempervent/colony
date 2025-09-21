@@ -1,0 +1,11 @@
+[package]
+name = "colony-sim"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+colony-core = { path = "../colony-core" }
+colony-io = { path = "../colony-io" }
+tokio = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }

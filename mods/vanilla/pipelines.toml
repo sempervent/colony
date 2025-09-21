@@ -1,0 +1,20 @@
+[[pipeline]]
+id = "udp_telemetry_ingest"
+ops = ["UdpDemux", "Decode", "Kalman", "Export"]
+qos = "Balanced"
+deadline_ms = 50
+payload_sz = 4096
+
+[[pipeline]]
+id = "http_api_processing"
+ops = ["HttpParse", "Decode", "Fft"]
+qos = "Latency"
+deadline_ms = 100
+payload_sz = 8192
+
+[[pipeline]]
+id = "can_bus_monitoring"
+ops = ["CanParse", "Crc", "Kalman"]
+qos = "Throughput"
+deadline_ms = 10
+payload_sz = 64

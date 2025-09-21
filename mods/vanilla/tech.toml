@@ -1,0 +1,23 @@
+[[tech]]
+id = "truth_beacon"
+name = "Truth Beacon"
+description = "Reveals true system metrics, countering UI illusions"
+cost = 100
+prerequisites = []
+effects = ["ui.illusion_resistance=1.0"]
+
+[[tech]]
+id = "numa_isolation"
+name = "NUMA Isolation"
+description = "Isolates workloads to specific NUMA domains"
+cost = 200
+prerequisites = ["truth_beacon"]
+effects = ["isolation_domains=4", "corruption_resistance=0.3"]
+
+[[tech]]
+id = "dual_run_adjudicator"
+name = "Dual-Run Adjudicator"
+description = "Runs critical pipelines twice and compares results"
+cost = 300
+prerequisites = ["numa_isolation"]
+effects = ["accuracy_boost=0.5", "latency_penalty=2.0"]

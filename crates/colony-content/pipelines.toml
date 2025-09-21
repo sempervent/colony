@@ -1,0 +1,27 @@
+[[pipeline]]
+id = "udp_telemetry_ingest"
+ops = ["UdpDemux", "Decode", "Kalman", "Export"]
+qos = "Balanced"
+deadline_ms = 50
+payload_sz = 4096
+
+[[pipeline]]
+id = "http_ingest"
+ops = ["HttpParse", "HttpExport"]
+qos = "Latency"
+deadline_ms = 100
+payload_sz = 2048
+
+[[pipeline]]
+id = "can_telemetry"
+ops = ["Decode", "Kalman", "GpuPreprocess", "Yolo", "GpuExport"]
+qos = "Balanced"
+deadline_ms = 40
+payload_sz = 256
+
+[[pipeline]]
+id = "modbus_poll"
+ops = ["Decode", "Kalman", "Export"]
+qos = "Throughput"
+deadline_ms = 100
+payload_sz = 512

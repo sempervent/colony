@@ -1,0 +1,23 @@
+[workspace]
+members = [
+  "crates/colony-core",
+  "crates/colony-io",
+  "crates/colony-sim",
+  "crates/colony-desktop",
+  "crates/colony-headless",
+  "crates/colony-mod",
+  "crates/colony-content",
+]
+
+[workspace.dependencies]
+bevy = { version = "0.14", default-features = false, features = ["bevy_asset", "bevy_winit", "bevy_ui", "serialize"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time"] }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+ron = "0.8"
+axum = "0.7"
+bytes = "1"
+thiserror = "1"
+rand = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }

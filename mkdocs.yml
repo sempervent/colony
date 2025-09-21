@@ -1,0 +1,136 @@
+site_name: Asynchronous Colony Simulator
+site_description: A comprehensive simulation of computational colonies with modding support
+site_author: Colony Simulator Team
+site_url: https://colony-simulator.github.io/colony
+
+repo_name: colony-simulator/colony
+repo_url: https://github.com/colony-simulator/colony
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+    - content.action.view
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences
+  - footnotes
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+      title: On this page
+  - tables
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+
+plugins:
+  - search:
+      lang: en
+  - mermaid2
+  - macros
+  - git-revision-date-localized:
+      enable_creation_date: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/colony-simulator/colony
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/colony-simulator
+  version:
+    provider: mike
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Player Manual:
+      - Basics: player-manual/basics.md
+      - Survival Guide: player-manual/survival.md
+      - Victory & Loss: player-manual/victory-loss.md
+  - Developer Docs:
+      - Architecture Overview: developer-docs/architecture.md
+      - Operations & Pipelines: developer-docs/ops-and-pipelines.md
+      - GPU Yard System: developer-docs/gpu-yard.md
+      - Corruption & Faults: developer-docs/corruption-faults.md
+      - Research & Rituals: developer-docs/research-rituals.md
+      - Victory/Loss System: developer-docs/victory-loss.md
+      - Sessions & Replay: developer-docs/sessions-replay.md
+      - Verification (M8): developer-docs/verification-m8.md
+  - Modding:
+      - Introduction: modding/intro.md
+      - WASM Operations: modding/wasm-ops.md
+      - Lua Events: modding/lua-events.md
+      - Hot Reload: modding/hot-reload.md
+      - Capabilities: modding/capabilities.md
+      - CLI Tools: modding/cli.md
+  - Reference:
+      - Rust Crates: reference/rust-crates.md
+      - WASM ABI: reference/wasm-abi.md
+      - Lua API: reference/lua-api.md
+      - Configuration Files: reference/configs.md
+  - Guides:
+      - First Black Swan: guides/first-black-swan.md
+      - Add a New Operation: guides/add-op.md
+      - Build a Mod: guides/build-mod.md
+      - Test a Mod: guides/test-mod.md
+  - Knowledge Base:
+      - Performance Tuning: kb/perf-tuning.md
+      - Debugging Guide: kb/debugging.md
+      - Deterministic Replay: kb/deterministic-replay.md
+      - CI & RC Pipeline: kb/ci-rc-pipeline.md
+  - Changelog: changelog.md
+  - Contributing: contributing.md
+  - License: license.md
+  - Code of Conduct: code-of-conduct.md

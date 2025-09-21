@@ -1,0 +1,702 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+  release:
+    types: [ published ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint-docs:
+    name: Lint Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-macros-plugin
+          pip install markdownlint-cli2
+
+      - name: Lint Markdown
+        run: |
+          markdownlint-cli2 "docs/**/*.md" "*.md"
+
+      - name: Validate MkDocs configuration
+        run: |
+          mkdocs build --strict
+
+  build-docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    needs: lint-docs
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-macros-plugin
+
+      - name: Build documentation
+        run: |
+          mkdocs build --strict
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs-build
+          path: site/
+
+  deploy-docs:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: build-docs
+    if: github.ref == 'refs/heads/main' || github.event_name == 'release'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-macros-plugin
+
+      - name: Build documentation
+        run: |
+          mkdocs build --strict
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          cname: docs.colony-simulator.com
+
+      - name: Deploy to GitHub Pages (Release)
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.event_name == 'release'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          cname: docs.colony-simulator.com
+
+  generate-api-docs:
+    name: Generate API Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build project
+        run: |
+          cargo build --workspace --all-features
+
+      - name: Generate Rust API docs
+        run: |
+          cargo doc --workspace --all-features --no-deps
+          cp -r target/doc/* docs/reference/rust-api/
+
+      - name: Upload API docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: rust-api-docs
+          path: docs/reference/rust-api/
+
+  test-docs:
+    name: Test Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-macros-plugin
+
+      - name: Test documentation build
+        run: |
+          mkdocs build --strict
+
+      - name: Test documentation serve
+        run: |
+          mkdocs serve --dev-addr 0.0.0.0:8000 &
+          sleep 10
+          curl -f http://localhost:8000 || exit 1
+          pkill -f mkdocs
+
+  link-check:
+    name: Check Documentation Links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-macros-plugin
+          pip install linkchecker
+
+      - name: Build documentation
+        run: |
+          mkdocs build --strict
+
+      - name: Check links
+        run: |
+          linkchecker --check-extern --ignore-url="^https://github.com/colony-simulator/colony" site/
+
+  spell-check:
+    name: Spell Check Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-macros-plugin
+          pip install pyspelling
+
+      - name: Create spell check configuration
+        run: |
+          cat > .spellcheck.yml << EOF
+          matrix:
+          - name: markdown
+            sources:
+            - docs/**/*.md
+            - "*.md"
+            aspell:
+              lang: en
+              d: en_US
+            dictionary:
+              wordlists:
+              - .spellcheck-words.txt
+              output: .spellcheck-words.txt
+          EOF
+
+      - name: Create custom dictionary
+        run: |
+          touch .spellcheck-words.txt
+          echo "colony" >> .spellcheck-words.txt
+          echo "simulator" >> .spellcheck-words.txt
+          echo "workyard" >> .spellcheck-words.txt
+          echo "workyards" >> .spellcheck-words.txt
+          echo "wasm" >> .spellcheck-words.txt
+          echo "lua" >> .spellcheck-words.txt
+          echo "bevy" >> .spellcheck-words.txt
+          echo "wasmtime" >> .spellcheck-words.txt
+          echo "mlua" >> .spellcheck-words.txt
+          echo "serde" >> .spellcheck-words.txt
+          echo "tokio" >> .spellcheck-words.txt
+          echo "wgpu" >> .spellcheck-words.txt
+          echo "pci" >> .spellcheck-words.txt
+          echo "pcie" >> .spellcheck-words.txt
+          echo "vram" >> .spellcheck-words.txt
+          echo "gpu" >> .spellcheck-words.txt
+          echo "cpu" >> .spellcheck-words.txt
+          echo "io" >> .spellcheck-words.txt
+          echo "qos" >> .spellcheck-words.txt
+          echo "sla" >> .spellcheck-words.txt
+          echo "kpi" >> .spellcheck-words.txt
+          echo "kpis" >> .spellcheck-words.txt
+          echo "api" >> .spellcheck-words.txt
+          echo "apis" >> .spellcheck-words.txt
+          echo "abi" >> .spellcheck-words.txt
+          echo "cli" >> .spellcheck-words.txt
+          echo "sdk" >> .spellcheck-words.txt
+          echo "mods" >> .spellcheck-words.txt
+          echo "modding" >> .spellcheck-words.txt
+          echo "modder" >> .spellcheck-words.txt
+          echo "modders" >> .spellcheck-words.txt
+          echo "hotreload" >> .spellcheck-words.txt
+          echo "hotreloadable" >> .spellcheck-words.txt
+          echo "sandboxed" >> .spellcheck-words.txt
+          echo "sandboxing" >> .spellcheck-words.txt
+          echo "deterministic" >> .spellcheck-words.txt
+          echo "determinism" >> .spellcheck-words.txt
+          echo "replay" >> .spellcheck-words.txt
+          echo "replays" >> .spellcheck-words.txt
+          echo "corruption" >> .spellcheck-words.txt
+          echo "faults" >> .spellcheck-words.txt
+          echo "faulty" >> .spellcheck-words.txt
+          echo "schedulers" >> .spellcheck-words.txt
+          echo "scheduling" >> .spellcheck-words.txt
+          echo "pipelines" >> .spellcheck-words.txt
+          echo "operations" >> .spellcheck-words.txt
+          echo "ops" >> .spellcheck-words.txt
+          echo "mutations" >> .spellcheck-words.txt
+          echo "mutated" >> .spellcheck-words.txt
+          echo "research" >> .spellcheck-words.txt
+          echo "researched" >> .spellcheck-words.txt
+          echo "victory" >> .spellcheck-words.txt
+          echo "loss" >> .spellcheck-words.txt
+          echo "doom" >> .spellcheck-words.txt
+          echo "scoring" >> .spellcheck-words.txt
+          echo "scored" >> .spellcheck-words.txt
+          echo "sessions" >> .spellcheck-words.txt
+          echo "session" >> .spellcheck-words.txt
+          echo "verification" >> .spellcheck-words.txt
+          echo "verified" >> .spellcheck-words.txt
+          echo "verifying" >> .spellcheck-words.txt
+          echo "milestone" >> .spellcheck-words.txt
+          echo "milestones" >> .spellcheck-words.txt
+          echo "changelog" >> .spellcheck-words.txt
+          echo "changelogs" >> .spellcheck-words.txt
+          echo "release" >> .spellcheck-words.txt
+          echo "releases" >> .spellcheck-words.txt
+          echo "candidate" >> .spellcheck-words.txt
+          echo "candidates" >> .spellcheck-words.txt
+          echo "rc" >> .spellcheck-words.txt
+          echo "rcs" >> .spellcheck-words.txt
+          echo "e2e" >> .spellcheck-words.txt
+          echo "end-to-end" >> .spellcheck-words.txt
+          echo "integration" >> .spellcheck-words.txt
+          echo "integrations" >> .spellcheck-words.txt
+          echo "unit" >> .spellcheck-words.txt
+          echo "units" >> .spellcheck-words.txt
+          echo "property" >> .spellcheck-words.txt
+          echo "properties" >> .spellcheck-words.txt
+          echo "benchmark" >> .spellcheck-words.txt
+          echo "benchmarks" >> .spellcheck-words.txt
+          echo "benchmarking" >> .spellcheck-words.txt
+          echo "performance" >> .spellcheck-words.txt
+          echo "performant" >> .spellcheck-words.txt
+          echo "optimization" >> .spellcheck-words.txt
+          echo "optimizations" >> .spellcheck-words.txt
+          echo "optimized" >> .spellcheck-words.txt
+          echo "optimizing" >> .spellcheck-words.txt
+          echo "debugging" >> .spellcheck-words.txt
+          echo "debug" >> .spellcheck-words.txt
+          echo "debugged" >> .spellcheck-words.txt
+          echo "ci" >> .spellcheck-words.txt
+          echo "cd" >> .spellcheck-words.txt
+          echo "pipeline" >> .spellcheck-words.txt
+          echo "pipelines" >> .spellcheck-words.txt
+          echo "workflow" >> .spellcheck-words.txt
+          echo "workflows" >> .spellcheck-words.txt
+          echo "github" >> .spellcheck-words.txt
+          echo "actions" >> .spellcheck-words.txt
+          echo "artifact" >> .spellcheck-words.txt
+          echo "artifacts" >> .spellcheck-words.txt
+          echo "checksum" >> .spellcheck-words.txt
+          echo "checksums" >> .spellcheck-words.txt
+          echo "sbom" >> .spellcheck-words.txt
+          echo "sboms" >> .spellcheck-words.txt
+          echo "signature" >> .spellcheck-words.txt
+          echo "signatures" >> .spellcheck-words.txt
+          echo "signed" >> .spellcheck-words.txt
+          echo "signing" >> .spellcheck-words.txt
+          echo "manifest" >> .spellcheck-words.txt
+          echo "manifests" >> .spellcheck-words.txt
+          echo "capability" >> .spellcheck-words.txt
+          echo "capabilities" >> .spellcheck-words.txt
+          echo "gated" >> .spellcheck-words.txt
+          echo "gating" >> .spellcheck-words.txt
+          echo "permissions" >> .spellcheck-words.txt
+          echo "permission" >> .spellcheck-words.txt
+          echo "authorized" >> .spellcheck-words.txt
+          echo "authorization" >> .spellcheck-words.txt
+          echo "unauthorized" >> .spellcheck-words.txt
+          echo "malicious" >> .spellcheck-words.txt
+          echo "maliciously" >> .spellcheck-words.txt
+          echo "accidental" >> .spellcheck-words.txt
+          echo "accidentally" >> .spellcheck-words.txt
+          echo "damage" >> .spellcheck-words.txt
+          echo "damaged" >> .spellcheck-words.txt
+          echo "damaging" >> .spellcheck-words.txt
+          echo "core" >> .spellcheck-words.txt
+          echo "cores" >> .spellcheck-words.txt
+          echo "simulation" >> .spellcheck-words.txt
+          echo "simulations" >> .spellcheck-words.txt
+          echo "simulated" >> .spellcheck-words.txt
+          echo "simulating" >> .spellcheck-words.txt
+          echo "user" >> .spellcheck-words.txt
+          echo "users" >> .spellcheck-words.txt
+          echo "system" >> .spellcheck-words.txt
+          echo "systems" >> .spellcheck-words.txt
+          echo "prevent" >> .spellcheck-words.txt
+          echo "preventing" >> .spellcheck-words.txt
+          echo "prevention" >> .spellcheck-words.txt
+          echo "prevented" >> .spellcheck-words.txt
+          echo "reproducible" >> .spellcheck-words.txt
+          echo "reproducibility" >> .spellcheck-words.txt
+          echo "reproduce" >> .spellcheck-words.txt
+          echo "reproducing" >> .spellcheck-words.txt
+          echo "reproduced" >> .spellcheck-words.txt
+          echo "competitive" >> .spellcheck-words.txt
+          echo "competitively" >> .spellcheck-words.txt
+          echo "scenarios" >> .spellcheck-words.txt
+          echo "scenario" >> .spellcheck-words.txt
+          echo "runtime" >> .spellcheck-words.txt
+          echo "runtimes" >> .spellcheck-words.txt
+          echo "updates" >> .spellcheck-words.txt
+          echo "updated" >> .spellcheck-words.txt
+          echo "updating" >> .spellcheck-words.txt
+          echo "reloaded" >> .spellcheck-words.txt
+          echo "reloading" >> .spellcheck-words.txt
+          echo "reload" >> .spellcheck-words.txt
+          echo "reloads" >> .spellcheck-words.txt
+          echo "restarting" >> .spellcheck-words.txt
+          echo "restart" >> .spellcheck-words.txt
+          echo "restarts" >> .spellcheck-words.txt
+          echo "restarted" >> .spellcheck-words.txt
+          echo "rapid" >> .spellcheck-words.txt
+          echo "rapidly" >> .spellcheck-words.txt
+          echo "development" >> .spellcheck-words.txt
+          echo "developments" >> .spellcheck-words.txt
+          echo "developed" >> .spellcheck-words.txt
+          echo "developing" >> .spellcheck-words.txt
+          echo "iteration" >> .spellcheck-words.txt
+          echo "iterations" >> .spellcheck-words.txt
+          echo "iterated" >> .spellcheck-words.txt
+          echo "iterating" >> .spellcheck-words.txt
+          echo "webassembly" >> .spellcheck-words.txt
+          echo "webassembly" >> .spellcheck-words.txt
+          echo "wasm" >> .spellcheck-words.txt
+          echo "wasm" >> .spellcheck-words.txt
+          echo "modules" >> .spellcheck-words.txt
+          echo "module" >> .spellcheck-words.txt
+          echo "compiled" >> .spellcheck-words.txt
+          echo "compiling" >> .spellcheck-words.txt
+          echo "compile" >> .spellcheck-words.txt
+          echo "compiles" >> .spellcheck-words.txt
+          echo "offering" >> .spellcheck-words.txt
+          echo "offered" >> .spellcheck-words.txt
+          echo "offer" >> .spellcheck-words.txt
+          echo "offers" >> .spellcheck-words.txt
+          echo "high" >> .spellcheck-words.txt
+          echo "higher" >> .spellcheck-words.txt
+          echo "highest" >> .spellcheck-words.txt
+          echo "performance" >> .spellcheck-words.txt
+          echo "performant" >> .spellcheck-words.txt
+          echo "strict" >> .spellcheck-words.txt
+          echo "strictly" >> .spellcheck-words.txt
+          echo "strictness" >> .spellcheck-words.txt
+          echo "abi" >> .spellcheck-words.txt
+          echo "abis" >> .spellcheck-words.txt
+          echo "expose" >> .spellcheck-words.txt
+          echo "exposed" >> .spellcheck-words.txt
+          echo "exposing" >> .spellcheck-words.txt
+          echo "exposes" >> .spellcheck-words.txt
+          echo "wasmopspec" >> .spellcheck-words.txt
+          echo "wasmopspecs" >> .spellcheck-words.txt
+          echo "custom" >> .spellcheck-words.txt
+          echo "customs" >> .spellcheck-words.txt
+          echo "customized" >> .spellcheck-words.txt
+          echo "customizing" >> .spellcheck-words.txt
+          echo "pipeline" >> .spellcheck-words.txt
+          echo "pipelines" >> .spellcheck-words.txt
+          echo "operations" >> .spellcheck-words.txt
+          echo "operation" >> .spellcheck-words.txt
+          echo "ops" >> .spellcheck-words.txt
+          echo "op" >> .spellcheck-words.txt
+          echo "lua" >> .spellcheck-words.txt
+          echo "luas" >> .spellcheck-words.txt
+          echo "scripts" >> .spellcheck-words.txt
+          echo "script" >> .spellcheck-words.txt
+          echo "scripted" >> .spellcheck-words.txt
+          echo "scripting" >> .spellcheck-words.txt
+          echo "providing" >> .spellcheck-words.txt
+          echo "provided" >> .spellcheck-words.txt
+          echo "provide" >> .spellcheck-words.txt
+          echo "provides" >> .spellcheck-words.txt
+          echo "flexibility" >> .spellcheck-words.txt
+          echo "flexible" >> .spellcheck-words.txt
+          echo "flexibly" >> .spellcheck-words.txt
+          echo "event" >> .spellcheck-words.txt
+          echo "events" >> .spellcheck-words.txt
+          echo "handling" >> .spellcheck-words.txt
+          echo "handled" >> .spellcheck-words.txt
+          echo "handle" >> .spellcheck-words.txt
+          echo "handles" >> .spellcheck-words.txt
+          echo "game" >> .spellcheck-words.txt
+          echo "games" >> .spellcheck-words.txt
+          echo "logic" >> .spellcheck-words.txt
+          echo "logics" >> .spellcheck-words.txt
+          echo "interact" >> .spellcheck-words.txt
+          echo "interacts" >> .spellcheck-words.txt
+          echo "interacting" >> .spellcheck-words.txt
+          echo "interacted" >> .spellcheck-words.txt
+          echo "interaction" >> .spellcheck-words.txt
+          echo "interactions" >> .spellcheck-words.txt
+          echo "simulation" >> .spellcheck-words.txt
+          echo "simulations" >> .spellcheck-words.txt
+          echo "simulated" >> .spellcheck-words.txt
+          echo "simulating" >> .spellcheck-words.txt
+          echo "via" >> .spellcheck-words.txt
+          echo "carefully" >> .spellcheck-words.txt
+          echo "careful" >> .spellcheck-words.txt
+          echo "carefulness" >> .spellcheck-words.txt
+          echo "exposed" >> .spellcheck-words.txt
+          echo "exposing" >> .spellcheck-words.txt
+          echo "expose" >> .spellcheck-words.txt
+          echo "exposes" >> .spellcheck-words.txt
+          echo "colony" >> .spellcheck-words.txt
+          echo "colonies" >> .spellcheck-words.txt
+          echo "api" >> .spellcheck-words.txt
+          echo "apis" >> .spellcheck-words.txt
+          echo "defined" >> .spellcheck-words.txt
+          echo "defining" >> .spellcheck-words.txt
+          echo "define" >> .spellcheck-words.txt
+          echo "defines" >> .spellcheck-words.txt
+          echo "modmanifest" >> .spellcheck-words.txt
+          echo "modmanifests" >> .spellcheck-words.txt
+          echo "these" >> .spellcheck-words.txt
+          echo "explicitly" >> .spellcheck-words.txt
+          echo "explicit" >> .spellcheck-words.txt
+          echo "explicitness" >> .spellcheck-words.txt
+          echo "grant" >> .spellcheck-words.txt
+          echo "grants" >> .spellcheck-words.txt
+          echo "granted" >> .spellcheck-words.txt
+          echo "granting" >> .spellcheck-words.txt
+          echo "permissions" >> .spellcheck-words.txt
+          echo "permission" >> .spellcheck-words.txt
+          echo "e.g." >> .spellcheck-words.txt
+          echo "sim_time" >> .spellcheck-words.txt
+          echo "enqueue_job" >> .spellcheck-words.txt
+          echo "preventing" >> .spellcheck-words.txt
+          echo "prevent" >> .spellcheck-words.txt
+          echo "prevents" >> .spellcheck-words.txt
+          echo "prevented" >> .spellcheck-words.txt
+          echo "prevention" >> .spellcheck-words.txt
+          echo "unauthorized" >> .spellcheck-words.txt
+          echo "access" >> .spellcheck-words.txt
+          echo "accessed" >> .spellcheck-words.txt
+          echo "accessing" >> .spellcheck-words.txt
+          echo "accesses" >> .spellcheck-words.txt
+          echo "hot" >> .spellcheck-words.txt
+          echo "hotter" >> .spellcheck-words.txt
+          echo "hottest" >> .spellcheck-words.txt
+          echo "reload" >> .spellcheck-words.txt
+          echo "reloads" >> .spellcheck-words.txt
+          echo "reloaded" >> .spellcheck-words.txt
+          echo "reloading" >> .spellcheck-words.txt
+          echo "allows" >> .spellcheck-words.txt
+          echo "allowed" >> .spellcheck-words.txt
+          echo "allowing" >> .spellcheck-words.txt
+          echo "allow" >> .spellcheck-words.txt
+          echo "mods" >> .spellcheck-words.txt
+          echo "mod" >> .spellcheck-words.txt
+          echo "updated" >> .spellcheck-words.txt
+          echo "updating" >> .spellcheck-words.txt
+          echo "update" >> .spellcheck-words.txt
+          echo "updates" >> .spellcheck-words.txt
+          echo "reloaded" >> .spellcheck-words.txt
+          echo "reloading" >> .spellcheck-words.txt
+          echo "reload" >> .spellcheck-words.txt
+          echo "reloads" >> .spellcheck-words.txt
+          echo "runtime" >> .spellcheck-words.txt
+          echo "runtimes" >> .spellcheck-words.txt
+          echo "without" >> .spellcheck-words.txt
+          echo "requiring" >> .spellcheck-words.txt
+          echo "require" >> .spellcheck-words.txt
+          echo "requires" >> .spellcheck-words.txt
+          echo "required" >> .spellcheck-words.txt
+          echo "game" >> .spellcheck-words.txt
+          echo "games" >> .spellcheck-words.txt
+          echo "restart" >> .spellcheck-words.txt
+          echo "restarts" >> .spellcheck-words.txt
+          echo "restarted" >> .spellcheck-words.txt
+          echo "restarting" >> .spellcheck-words.txt
+          echo "crucial" >> .spellcheck-words.txt
+          echo "crucially" >> .spellcheck-words.txt
+          echo "rapid" >> .spellcheck-words.txt
+          echo "rapidly" >> .spellcheck-words.txt
+          echo "development" >> .spellcheck-words.txt
+          echo "developments" >> .spellcheck-words.txt
+          echo "developed" >> .spellcheck-words.txt
+          echo "developing" >> .spellcheck-words.txt
+          echo "iteration" >> .spellcheck-words.txt
+          echo "iterations" >> .spellcheck-words.txt
+          echo "iterated" >> .spellcheck-words.txt
+          echo "iterating" >> .spellcheck-words.txt
+          echo "overview" >> .spellcheck-words.txt
+          echo "overviews" >> .spellcheck-words.txt
+          echo "should" >> .spellcheck-words.txt
+          echo "provide" >> .spellcheck-words.txt
+          echo "provides" >> .spellcheck-words.txt
+          echo "provided" >> .spellcheck-words.txt
+          echo "providing" >> .spellcheck-words.txt
+          echo "solid" >> .spellcheck-words.txt
+          echo "solidly" >> .spellcheck-words.txt
+          echo "solidity" >> .spellcheck-words.txt
+          echo "foundation" >> .spellcheck-words.txt
+          echo "foundations" >> .spellcheck-words.txt
+          echo "diving" >> .spellcheck-words.txt
+          echo "dive" >> .spellcheck-words.txt
+          echo "dives" >> .spellcheck-words.txt
+          echo "dived" >> .spellcheck-words.txt
+          echo "deeper" >> .spellcheck-words.txt
+          echo "deepest" >> .spellcheck-words.txt
+          echo "deep" >> .spellcheck-words.txt
+          echo "deeper" >> .spellcheck-words.txt
+          echo "deepest" >> .spellcheck-words.txt
+          echo "specific" >> .spellcheck-words.txt
+          echo "specifically" >> .spellcheck-words.txt
+          echo "specificity" >> .spellcheck-words.txt
+          echo "systems" >> .spellcheck-words.txt
+          echo "system" >> .spellcheck-words.txt
+
+      - name: Run spell check
+        run: |
+          pyspelling -c .spellcheck.yml
+
+  accessibility-check:
+    name: Check Documentation Accessibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-macros-plugin
+          pip install a11y
+
+      - name: Build documentation
+        run: |
+          mkdocs build --strict
+
+      - name: Check accessibility
+        run: |
+          a11y site/ --reporter json --output a11y-report.json || true
+          cat a11y-report.json
+
+  security-scan:
+    name: Security Scan Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-macros-plugin
+          pip install safety
+
+      - name: Security scan
+        run: |
+          safety check --json --output safety-report.json || true
+          cat safety-report.json
+
+  performance-test:
+    name: Performance Test Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-macros-plugin
+
+      - name: Build documentation with timing
+        run: |
+          time mkdocs build --strict
+
+      - name: Check build size
+        run: |
+          du -sh site/
+          find site/ -name "*.html" | wc -l
+          find site/ -name "*.css" | wc -l
+          find site/ -name "*.js" | wc -l
+
+  notify-completion:
+    name: Notify Documentation Completion
+    runs-on: ubuntu-latest
+    needs: [lint-docs, build-docs, test-docs, link-check, spell-check, accessibility-check, security-scan, performance-test]
+    if: always()
+    steps:
+      - name: Notify success
+        if: ${{ needs.lint-docs.result == 'success' && needs.build-docs.result == 'success' && needs.test-docs.result == 'success' && needs.link-check.result == 'success' && needs.spell-check.result == 'success' && needs.accessibility-check.result == 'success' && needs.security-scan.result == 'success' && needs.performance-test.result == 'success' }}
+        run: |
+          echo "✅ All documentation checks passed successfully!"
+
+      - name: Notify failure
+        if: ${{ needs.lint-docs.result == 'failure' || needs.build-docs.result == 'failure' || needs.test-docs.result == 'failure' || needs.link-check.result == 'failure' || needs.spell-check.result == 'failure' || needs.accessibility-check.result == 'failure' || needs.security-scan.result == 'failure' || needs.performance-test.result == 'failure' }}
+        run: |
+          echo "❌ Some documentation checks failed. Please review the logs."
+          exit 1

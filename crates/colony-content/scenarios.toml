@@ -1,0 +1,126 @@
+# Colony Simulator Scenarios
+# These define different starting conditions, difficulty levels, and victory/loss conditions
+
+[[scenario]]
+id = "first_light_chill"
+name = "First Light (Chill)"
+description = "A gentle introduction to colony management. Small CPU yard, low I/O load, lenient rules."
+seed = 42
+
+[difficulty]
+name = "Chill"
+power_cap_mult = 1.2
+heat_cap_mult = 1.1
+bw_total_mult = 1.1
+fault_rate_mult = 0.5
+black_swan_weight_mult = 0.3
+research_rate_mult = 1.5
+
+[victory]
+target_uptime_days = 30
+min_deadline_hit_pct = 95.0
+max_corruption_field = 0.5
+observation_window_days = 3
+
+[loss]
+hard_power_deficit_ticks = 2000
+sustained_deadline_miss_pct = 10.0
+max_sticky_workers = 5
+black_swan_chain_len = 5
+time_limit_days = null
+
+enabled_pipelines = ["udp_telemetry_ingest", "http_ingest"]
+enabled_events = ["pcie_link_flap"]
+
+[[scenario]]
+id = "factory_horizon_nominal"
+name = "Factory Horizon (Nominal)"
+description = "Standard industrial operation. GPU enabled, moderate I/O load, balanced rules."
+seed = 123
+
+[difficulty]
+name = "Nominal"
+power_cap_mult = 1.0
+heat_cap_mult = 1.0
+bw_total_mult = 1.0
+fault_rate_mult = 1.0
+black_swan_weight_mult = 1.0
+research_rate_mult = 1.0
+
+[victory]
+target_uptime_days = 365
+min_deadline_hit_pct = 99.5
+max_corruption_field = 0.35
+observation_window_days = 7
+
+[loss]
+hard_power_deficit_ticks = 1000
+sustained_deadline_miss_pct = 5.0
+max_sticky_workers = 3
+black_swan_chain_len = 3
+time_limit_days = null
+
+# All pipelines and events enabled by default
+
+[[scenario]]
+id = "signal_tempest_abyssal"
+name = "Signal Tempest (Abyssal)"
+description = "Extreme conditions. High I/O bursts, strict corruption limits, aggressive Black Swans."
+seed = 666
+
+[difficulty]
+name = "Abyssal"
+power_cap_mult = 0.8
+heat_cap_mult = 0.9
+bw_total_mult = 0.8
+fault_rate_mult = 2.0
+black_swan_weight_mult = 2.5
+research_rate_mult = 0.7
+
+[victory]
+target_uptime_days = 180
+min_deadline_hit_pct = 99.8
+max_corruption_field = 0.25
+observation_window_days = 14
+
+[loss]
+hard_power_deficit_ticks = 500
+sustained_deadline_miss_pct = 2.0
+max_sticky_workers = 2
+black_swan_chain_len = 2
+time_limit_days = 200
+
+# All pipelines and events enabled by default
+
+# Scenario Configuration Guide for Modders:
+# 
+# [scenario] - Main scenario definition
+#   id: Unique identifier for the scenario
+#   name: Display name shown in UI
+#   description: Detailed description of the scenario
+#   seed: Random seed for deterministic runs
+#
+# [difficulty] - Difficulty scaling multipliers
+#   name: Difficulty level name
+#   power_cap_mult: Multiplier for power capacity (1.0 = normal)
+#   heat_cap_mult: Multiplier for heat capacity (1.0 = normal)
+#   bw_total_mult: Multiplier for bandwidth (1.0 = normal)
+#   fault_rate_mult: Multiplier for fault rates (1.0 = normal)
+#   black_swan_weight_mult: Multiplier for Black Swan event weights (1.0 = normal)
+#   research_rate_mult: Multiplier for research point generation (1.0 = normal)
+#
+# [victory] - Victory conditions
+#   target_uptime_days: Days of sustained SLA to achieve victory
+#   min_deadline_hit_pct: Minimum deadline hit percentage (e.g., 99.5)
+#   max_corruption_field: Maximum corruption field value (e.g., 0.35)
+#   observation_window_days: Rolling window for SLA verification
+#
+# [loss] - Loss conditions
+#   hard_power_deficit_ticks: Ticks of power deficit before loss
+#   sustained_deadline_miss_pct: Sustained miss percentage threshold
+#   max_sticky_workers: Maximum sticky workers before loss
+#   black_swan_chain_len: Maximum Black Swan chain length before loss
+#   time_limit_days: Optional time limit (null for no limit)
+#
+# enabled_pipelines: Optional list of pipeline IDs to enable (null for all)
+# enabled_events: Optional list of Black Swan event IDs to enable (null for all)

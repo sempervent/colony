@@ -1,0 +1,17 @@
+[package]
+name = "colony-desktop"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "colony-desktop"
+path = "src/main.rs"
+
+[dependencies]
+bevy = { workspace = true, features = ["default"] }
+bevy_egui = "0.25"
+egui = "0.25"
+colony-core = { path = "../colony-core" }
+colony-io = { path = "../colony-io" }
+serde = { workspace = true }
+ron = { workspace = true }

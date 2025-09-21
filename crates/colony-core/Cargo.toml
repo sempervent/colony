@@ -1,0 +1,34 @@
+[package]
+name = "colony-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+rand = { workspace = true }
+rand_pcg = "0.3"
+uuid = { workspace = true }
+thiserror = { workspace = true }
+toml = { workspace = true }
+anyhow = "1.0"
+colony-modsdk = { path = "../colony-modsdk" }
+wasmtime = "15.0"
+mlua = { version = "0.9", features = ["lua54", "send"] }
+notify = "6.0"
+tokio = { version = "1.0", features = ["full"] }
+reqwest = { version = "0.11", features = ["json"] }
+walkdir = "2.3"
+proptest = "1.0"
+quickcheck = "1.0"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[dev-dependencies]
+proptest = "1.0"
+quickcheck = "1.0"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "colony_benchmarks"
+harness = false
