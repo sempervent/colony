@@ -1,10 +1,10 @@
 site_name: Asynchronous Colony Simulator
 site_description: A comprehensive simulation of computational colonies with modding support
 site_author: Colony Simulator Team
-site_url: https://colony-simulator.github.io/colony
+site_url: https://sempervent.github.io/colony
 
 repo_name: colony-simulator/colony
-repo_url: https://github.com/colony-simulator/colony
+repo_url: https://github.com/sempervent/colony
 edit_uri: edit/main/docs/
 
 theme:
