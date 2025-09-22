@@ -97,6 +97,7 @@ nav:
   - Getting Started: getting-started.md
   - Player Manual:
       - Basics: player-manual/basics.md
+      - Desktop Application: player-manual/desktop.md
       - Survival Guide: player-manual/survival.md
       - Victory & Loss: player-manual/victory-loss.md
   - Developer Docs:
