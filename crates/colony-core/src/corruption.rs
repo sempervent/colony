@@ -1,8 +1,8 @@
 use serde::{Serialize, Deserialize};
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
 use rand_pcg::Pcg64;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CorruptionTunables {
     pub base_fault_rate: f32,       // e.g., 0.002 faults per op at zero stress
     pub heat_weight: f32,           // contribution of thermal stress
@@ -31,7 +31,7 @@ impl Default for CorruptionTunables {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, bevy::prelude::Resource)]
 pub struct CorruptionField {
     pub global: f32,  // 0..1
 }

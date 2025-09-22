@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = [
   "crates/colony-core",
   "crates/colony-io",
@@ -6,11 +7,15 @@ members = [
   "crates/colony-desktop",
   "crates/colony-headless",
   "crates/colony-mod",
+  "crates/colony-mod-cli",
+  "crates/colony-modsdk",
   "crates/colony-content",
+  "crates/xtask",
 ]
 
 [workspace.dependencies]
-bevy = { version = "0.14", default-features = false, features = ["bevy_asset", "bevy_winit", "bevy_ui", "serialize"] }
+bevy = { version = "0.16", default-features = false, features = ["bevy_asset", "bevy_winit", "bevy_ui", "serialize"] }
+bevy_egui = "0.36"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time"] }
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"

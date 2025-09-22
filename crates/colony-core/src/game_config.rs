@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
+use serde_json;
+// HashMap import removed - not used in this file
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Difficulty {

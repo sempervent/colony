@@ -4,7 +4,7 @@ pub fn update_thermal_system(yards: &mut [Workyard], delta_time: f32) {
     for yard in yards.iter_mut() {
         // Heat generation based on power draw and utilization
         let utilization = 0.7; // Simplified - would come from actual worker utilization
-        let heat_generation = yard.power_draw * utilization * delta_time * 0.01;
+        let heat_generation = yard.power_draw_kw * utilization * delta_time * 0.01;
         
         // Heat decay
         let heat_decay = yard.heat * 0.1 * delta_time;

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use serde::{Serialize, Deserialize};
-use std::collections::VecDeque;
+// VecDeque import removed - not used in this file
 
 #[derive(bevy::prelude::Resource, Default, Clone, Debug, Serialize, Deserialize)]
 pub struct SessionCtl {

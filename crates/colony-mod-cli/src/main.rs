@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use colony_modsdk::{ModManifest, Entrypoints, Capabilities, WasmOpSpec, LuaEventSpec};
+use colony_modsdk::{ModManifest, Entrypoints, Capabilities};
 use std::path::{Path, PathBuf};
 use std::fs;
 use anyhow::Result;

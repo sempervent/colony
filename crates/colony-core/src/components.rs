@@ -1,14 +1,14 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum WorkClass {
     Cpu,
     Gpu,
     Io(IoKind),
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum IoKind {
     Udp,
     Can,
@@ -32,7 +32,7 @@ pub struct Worker {
     pub sticky_faults: u32,          // count
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum WorkerState {
     Idle,
     Queued,
@@ -47,6 +47,11 @@ pub enum FaultKind {
     DataSkew,        // output drift; requires re-run
     StickyConfig,    // worker enters Recovering; needs reimage/maintenance
     QueueDrop,       // packet/job dropped; deadline likely missed
+    Thermal,         // thermal-related fault
+    Power,           // power-related fault
+    Corruption,      // corruption-related fault
+    Network,         // network-related fault
+    Hardware,        // hardware-related fault
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -80,7 +85,7 @@ pub struct YardWorkload {
     pub units_this_tick: f32 
 } // set by dispatcher/segments
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum WorkyardKind {
     CpuArray,
     GpuFarm,
@@ -117,6 +122,8 @@ pub enum Op {
     TcpSessionize,
     ModbusMap,
     MaintenanceCool,
+    GpuPreprocess,
+    GpuExport,
     DynamicWasm { op_id: String },
     DynamicLua { func: String },
 }
@@ -137,6 +144,8 @@ impl Op {
             Op::TcpSessionize => 5,
             Op::ModbusMap => 2,
             Op::MaintenanceCool => 8,
+            Op::GpuPreprocess => 4,
+            Op::GpuExport => 3,
             Op::DynamicWasm { .. } => 5, // Default cost for WASM ops
             Op::DynamicLua { .. } => 2,  // Default cost for Lua ops
         }
@@ -157,6 +166,8 @@ impl Op {
             Op::TcpSessionize => 1.2,
             Op::ModbusMap => 0.5,
             Op::MaintenanceCool => 0.0, // No heat generation
+            Op::GpuPreprocess => 1.0,
+            Op::GpuExport => 0.8,
             Op::DynamicWasm { .. } => 1.0, // Default work units for WASM ops
             Op::DynamicLua { .. } => 0.5,  // Default work units for Lua ops
         }
@@ -173,6 +184,8 @@ impl Op {
         match self {
             Op::Yolo => (payload_sz as f32 / 1_000_000.0) * 3.0 + 150.0, // rough: activations+weights
             Op::Fft => (payload_sz as f32 / 1_000_000.0) * 1.0 + 30.0, // FFT uses GPU memory
+            Op::GpuPreprocess => (payload_sz as f32 / 1_000_000.0) * 0.8 + 20.0, // GPU preprocessing
+            Op::GpuExport => (payload_sz as f32 / 1_000_000.0) * 0.3 + 5.0, // GPU export
             Op::DynamicWasm { .. } => (payload_sz as f32 / 1_000_000.0) * 0.5 + 10.0, // Default VRAM for WASM ops
             Op::DynamicLua { .. } => 0.0, // Lua ops don't use VRAM
             _ => 0.0,
@@ -187,11 +200,3 @@ pub enum QoS {
     Balanced,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum FaultKind {
-    Thermal,
-    Power,
-    Corruption,
-    Network,
-    Hardware,
-}

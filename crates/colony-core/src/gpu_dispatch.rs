@@ -1,10 +1,8 @@
 use bevy::prelude::*;
-use super::{GpuFarm, GpuBatchBuffer, GpuBatchItem, calculate_batch_timing, Worker, WorkerState, Workyard, YardWorkload, Job, Op, thermal_throttle, bandwidth_latency_multiplier, IoRolling, CorruptionField, FaultKpi, WorkerReport};
-use super::corruption::CorruptionTunables;
+use super::{GpuFarm, GpuBatchBuffer, GpuBatchItem, calculate_batch_timing, Worker, WorkerState, Workyard, YardWorkload, Op, thermal_throttle, bandwidth_latency_multiplier, IoRolling, CorruptionField, WorkerReport};
 use super::faults::{fault_inject_on_completion, handle_fault};
 use super::queue::starvation;
-use super::scheduler::Scheduler;
-use tokio::time::Duration;
+// Duration import removed - not used in this file
 
 #[derive(Resource, Default)]
 pub struct GpuBatchQueues {
@@ -56,6 +54,9 @@ pub fn gpu_dispatch_system(
             continue;
         }
 
+        // Collect job IDs to remove after processing
+        let mut completed_job_ids = Vec::new();
+        
         // Process jobs for batching
         for enqueued_job in jobs.iter() {
             let job = &enqueued_job.job;
@@ -110,10 +111,15 @@ pub fn gpu_dispatch_system(
                         &mut report_writer,
                     );
 
-                    // Remove the job from the queue
-                    jobq.gpu.retain(|ej| ej.job.id != job.id);
+                    // Mark job for removal
+                    completed_job_ids.push(job.id);
                 }
             }
+        }
+        
+        // Remove completed jobs from the queue
+        for job_id in completed_job_ids {
+            jobq.gpu.retain(|ej| ej.job.id != job_id);
         }
     }
 }
@@ -189,7 +195,7 @@ fn process_gpu_batch(
 
         // Check for fault injection (batch-level)
         let fault = fault_inject_on_completion(
-            worker,
+            &*worker,
             &super::Workyard {
                 kind: super::WorkyardKind::GpuFarm,
                 slots: 2,

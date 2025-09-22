@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
+// VecDeque import removed - no longer needed after removing duplicate JobQueue
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceTunables {
@@ -54,31 +54,7 @@ pub struct Colony {
     pub seed: u64,
 }
 
-#[derive(Resource, Default, Debug)]
-pub struct JobQueue {
-    pub jobs: VecDeque<super::Job>,
-}
-
-impl JobQueue {
-    pub fn push(&mut self, job: super::Job) {
-        self.jobs.push_back(job);
-    }
-
-    pub fn pop(&mut self) -> Option<super::Job> {
-        self.jobs.pop_front()
-    }
-
-    pub fn peek(&self) -> &[super::Job] {
-        // Convert VecDeque to slice for scheduler
-        // This is a bit hacky but works for M0
-        unsafe {
-            std::slice::from_raw_parts(
-                self.jobs.as_slices().0.as_ptr(),
-                self.jobs.len(),
-            )
-        }
-    }
-}
+// JobQueue is defined in queue.rs to avoid conflicts
 
 #[derive(Resource, Default, Clone, Copy)]
 pub struct DispatchScale(pub f32); // 0..1
@@ -113,6 +89,6 @@ pub fn bandwidth_latency_multiplier(util: f32, tail_exp: f32) -> f32 {
     if util <= 0.7 { 
         1.0 
     } else { 
-        (1.0 + ((util - 0.7) / 0.3).max(0.0).powf(tail_exp)) 
+        1.0 + ((util - 0.7) / 0.3).max(0.0).powf(tail_exp) 
     }
 }

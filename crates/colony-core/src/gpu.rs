@@ -111,10 +111,12 @@ impl GpuBatchBuffer {
 
         // Timeout
         if let Some(first_tick) = self.first_enqueue_tick {
-            let wait_ticks = now_tick - first_tick;
-            let timeout_ticks = (tunables.batch_timeout_ms as u64 * 1000) / 16; // Convert ms to 16ms ticks
-            if wait_ticks >= timeout_ticks {
-                return true;
+            if now_tick >= first_tick {
+                let wait_ticks = now_tick - first_tick;
+                let timeout_ticks = (tunables.batch_timeout_ms as u64 * 1000) / 16; // Convert ms to 16ms ticks
+                if wait_ticks >= timeout_ticks {
+                    return true;
+                }
             }
         }
 

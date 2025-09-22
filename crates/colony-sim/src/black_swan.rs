@@ -121,8 +121,8 @@ impl BlackSwanEngine {
                 colony.corruption_field > *threshold
             }
             Trigger::PowerDraw { threshold } => {
-                let total_power: f32 = yards.iter().map(|yard| yard.power_draw).sum();
-                total_power / colony.power_cap > *threshold
+                let total_power: f32 = yards.iter().map(|yard| yard.power_draw_kw).sum();
+                total_power / colony.power_cap_kw > *threshold
             }
         }
     }
@@ -133,7 +133,7 @@ impl BlackSwanEngine {
                 Effect::Debt { multiplier, .. } => {
                     // Apply power multiplier
                     for yard in yards.iter_mut() {
-                        yard.power_draw *= multiplier;
+                        yard.power_draw_kw *= multiplier;
                     }
                 }
                 Effect::CorruptionField { delta } => {

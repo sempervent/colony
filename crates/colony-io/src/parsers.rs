@@ -1,4 +1,4 @@
-use crate::packets::*;
+use crate::IoPacket;
 use bytes::Bytes;
 
 pub struct UdpParser;
@@ -21,7 +21,11 @@ impl UdpParser {
         
         let payload = data[8..length as usize].to_vec();
         
-        Ok(IoPacket::Udp(payload))
+        Ok(IoPacket::Udp {
+            ts_ns: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
+            src: "127.0.0.1:1234".parse().unwrap(),
+            data: Bytes::from(payload),
+        })
     }
 }
 
@@ -46,7 +50,13 @@ impl TcpParser {
         
         let payload = Bytes::copy_from_slice(&data[data_offset * 4..]);
         
-        Ok(IoPacket::Tcp(payload))
+        // TCP is not a valid IoPacket variant, use HttpReq instead
+        Ok(IoPacket::HttpReq {
+            ts_ns: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
+            path: "/tcp-data".to_string(),
+            headers: vec![],
+            body: payload,
+        })
     }
 }
 
@@ -89,11 +99,12 @@ impl HttpParser {
                 Vec::new()
             };
             
-            Ok(IoPacket::Http(HttpEvent::Response {
-                status,
-                headers,
-                body,
-            }))
+            Ok(IoPacket::HttpResp {
+                ts_ns: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
+                code: status,
+                headers: headers.into_iter().collect(),
+                body: Bytes::from(body),
+            })
         } else {
             // Request
             let lines: Vec<&str> = text.lines().collect();
@@ -129,12 +140,12 @@ impl HttpParser {
                 Vec::new()
             };
             
-            Ok(IoPacket::Http(HttpEvent::Request {
-                method,
+            Ok(IoPacket::HttpReq {
+                ts_ns: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
                 path,
-                headers,
-                body,
-            }))
+                headers: headers.into_iter().collect(),
+                body: Bytes::from(body),
+            })
         }
     }
 }

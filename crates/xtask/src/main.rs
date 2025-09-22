@@ -108,12 +108,13 @@ impl Default for SuiteResult {
     }
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Verify { no_bench, no_audit, output } => {
-            run_verification_suite(no_bench, no_audit, &output)?;
+            run_verification_suite(no_bench, no_audit, &output).await?;
         }
         Commands::E2e { output } => {
             run_e2e_tests(&output)?;
@@ -122,14 +123,14 @@ fn main() -> Result<()> {
             build_release_candidate(&version, &output)?;
         }
         Commands::Test { suite, output } => {
-            run_test_suite(suite, &output)?;
+            run_test_suite(suite, &output).await?;
         }
     }
 
     Ok(())
 }
 
-fn run_verification_suite(no_bench: bool, no_audit: bool, output_dir: &Path) -> Result<()> {
+async fn run_verification_suite(no_bench: bool, no_audit: bool, output_dir: &Path) -> Result<()> {
     println!("🔍 Running Colony Simulator Verification Suite");
     println!("==============================================");
     
@@ -159,7 +160,7 @@ fn run_verification_suite(no_bench: bool, no_audit: bool, output_dir: &Path) -> 
 
     // 3. Integration tests
     println!("\n🔗 Running integration tests...");
-    let integration_result = run_integration_tests(output_dir)?;
+    let integration_result = run_integration_tests(output_dir).await?;
     results.suites.insert("integration".to_string(), integration_result);
 
     // 4. Determinism and replay tests
@@ -315,7 +316,7 @@ fn build_release_candidate(version: &str, output_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn run_test_suite(suite: TestSuite, output_dir: &Path) -> Result<()> {
+async fn run_test_suite(suite: TestSuite, output_dir: &Path) -> Result<()> {
     std::fs::create_dir_all(output_dir)?;
     
     match suite {
@@ -324,7 +325,7 @@ fn run_test_suite(suite: TestSuite, output_dir: &Path) -> Result<()> {
             save_suite_result("unit", &result, output_dir)?;
         }
         TestSuite::Integration => {
-            let result = run_integration_tests(output_dir)?;
+            let result = run_integration_tests(output_dir).await?;
             save_suite_result("integration", &result, output_dir)?;
         }
         TestSuite::Determinism => {
@@ -444,7 +445,7 @@ fn run_unit_tests() -> Result<SuiteResult> {
     Ok(result)
 }
 
-fn run_integration_tests(output_dir: &Path) -> Result<SuiteResult> {
+async fn run_integration_tests(output_dir: &Path) -> Result<SuiteResult> {
     let start = Instant::now();
     
     // Start headless server

@@ -1,6 +1,6 @@
 pub mod parsers;
 pub mod simulators;
-pub mod packets;
+// pub mod packets; // Removed - was causing conflicts
 pub mod udp_sim;
 pub mod http_sim;
 pub mod http_parse;
@@ -11,7 +11,7 @@ mod tests;
 
 pub use parsers::*;
 pub use simulators::*;
-pub use packets::*;
+// pub use packets::*; // Removed - was causing conflicts
 pub use udp_sim::UdpSimulator;
 pub use http_sim::HttpSimulator;
 pub use http_parse::HttpParser;
@@ -85,18 +85,22 @@ pub async fn run_udp_sim(
         }
 
         // Create a simulated UDP packet
-        let packet = IoPacket::Udp(vec![
-            0x45, 0x00, 0x00, 0x20, // IP header
-            0x00, 0x01, 0x00, 0x00, // More IP header
-            0x40, 0x11, 0x00, 0x00, // UDP protocol
-            0x7f, 0x00, 0x00, 0x01, // Source IP
-            0x7f, 0x00, 0x00, 0x01, // Dest IP
-            0x12, 0x34, 0x56, 0x78, // Source/Dest ports
-            0x00, 0x0c, 0x00, 0x00, // Length/Checksum
-            0x48, 0x65, 0x6c, 0x6c, // "Hell"
-            0x6f, 0x20, 0x57, 0x6f, // "o Wo"
-            0x72, 0x6c, 0x64, 0x21, // "rld!"
-        ]);
+        let packet = IoPacket::Udp {
+            ts_ns: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
+            src: "127.0.0.1:1234".parse().unwrap(),
+            data: Bytes::from(vec![
+                0x45, 0x00, 0x00, 0x20, // IP header
+                0x00, 0x01, 0x00, 0x00, // More IP header
+                0x40, 0x11, 0x00, 0x00, // UDP protocol
+                0x7f, 0x00, 0x00, 0x01, // Source IP
+                0x7f, 0x00, 0x00, 0x01, // Dest IP
+                0x12, 0x34, 0x56, 0x78, // Source/Dest ports
+                0x00, 0x0c, 0x00, 0x00, // Length/Checksum
+                0x48, 0x65, 0x6c, 0x6c, // "Hell"
+                0x6f, 0x20, 0x57, 0x6f, // "o Wo"
+                0x72, 0x6c, 0x64, 0x21, // "rld!"
+            ]),
+        };
 
         // Simulate jitter
         if cfg.jitter_ms > 0 {
@@ -120,10 +124,14 @@ pub async fn parse_udp(
     
     loop {
         let (len, _addr) = rx.recv_from(&mut buf).await?;
-        let packet = IoPacket::Udp(buf[..len].to_vec());
+        let packet = IoPacket::Udp {
+            ts_ns: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
+            src: "127.0.0.1:1234".parse().unwrap(),
+            data: Bytes::from(buf[..len].to_vec()),
+        };
         
         if tx.send(packet).await.is_err() {
-            break;
+            break Ok(());
         }
     }
 }

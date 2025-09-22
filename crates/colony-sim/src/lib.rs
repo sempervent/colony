@@ -38,6 +38,11 @@ pub fn skill_mult(worker: &Worker, op: &colony_core::Op) -> f32 {
         colony_core::Op::Yolo => worker.skill_gpu,
         colony_core::Op::UdpDemux | colony_core::Op::TcpSessionize | colony_core::Op::HttpParse | colony_core::Op::CanParse | colony_core::Op::ModbusMap => worker.skill_io,
         colony_core::Op::Crc => (worker.skill_cpu + worker.skill_io) / 2.0,
+        colony_core::Op::Export | colony_core::Op::HttpExport => worker.skill_io,
+        colony_core::Op::MaintenanceCool => worker.skill_cpu,
+        colony_core::Op::GpuPreprocess | colony_core::Op::GpuExport => worker.skill_gpu,
+        colony_core::Op::DynamicWasm { .. } => worker.skill_cpu, // Default to CPU for dynamic WASM ops
+        colony_core::Op::DynamicLua { .. } => worker.skill_cpu, // Default to CPU for dynamic Lua ops
     }
 }
 
@@ -53,6 +58,13 @@ pub fn base_speed(op: &colony_core::Op) -> f32 {
         colony_core::Op::TcpSessionize => 1.5,
         colony_core::Op::ModbusMap => 2.0,
         colony_core::Op::HttpParse => 1.2,
+        colony_core::Op::Export => 1.5,
+        colony_core::Op::HttpExport => 1.3,
+        colony_core::Op::MaintenanceCool => 0.5,
+        colony_core::Op::GpuPreprocess => 0.4,
+        colony_core::Op::GpuExport => 0.6,
+        colony_core::Op::DynamicWasm { .. } => 1.0, // Default speed for dynamic WASM ops
+        colony_core::Op::DynamicLua { .. } => 1.2, // Default speed for dynamic Lua ops
     }
 }
 
@@ -81,10 +93,10 @@ impl SimulationEnv {
         Self {
             heat: yard.heat,
             heat_cap: yard.heat_cap,
-            bandwidth: colony.bandwidth,
+            bandwidth: colony.bandwidth_total_gbps,
             corruption_field: colony.corruption_field,
-            power_draw: yard.power_draw,
-            power_cap: colony.power_cap,
+            power_draw: yard.power_draw_kw,
+            power_cap: colony.power_cap_kw,
         }
     }
 }

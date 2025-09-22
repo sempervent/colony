@@ -84,7 +84,6 @@ impl IoSource for HttpSimulator {
             
             let resp_packet = IoPacket::HttpResp {
                 ts_ns: now + 1000000,
-                path,
                 code: 200,
                 headers: response_headers,
                 body: Bytes::from(response_body),

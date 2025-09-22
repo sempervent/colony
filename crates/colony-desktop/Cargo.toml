@@ -9,8 +9,8 @@ path = "src/main.rs"
 
 [dependencies]
 bevy = { workspace = true, features = ["default"] }
-bevy_egui = "0.25"
-egui = "0.25"
+bevy_egui = { workspace = true }
+egui = "0.27"
 colony-core = { path = "../colony-core" }
 colony-io = { path = "../colony-io" }
 serde = { workspace = true }

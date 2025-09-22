@@ -1,6 +1,5 @@
 use bevy::prelude::*;
-use crate::{Colony, Workyard, YardWorkload, DispatchScale, thermal_throttle, bandwidth_latency_multiplier, Worker, WorkerState, IoRolling, CorruptionField, FaultKpi, Debts};
-use crate::corruption::CorruptionTunables;
+use crate::{Colony, Workyard, YardWorkload, DispatchScale, Worker, WorkerState, IoRolling, CorruptionField, Debts};
 use crate::queue::{JobQueue, average_starvation};
 
 pub fn power_bandwidth_system(

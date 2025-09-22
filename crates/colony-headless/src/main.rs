@@ -19,11 +19,14 @@ async fn main() {
             now: chrono::Utc::now(),
         })),
         colony: Arc::new(RwLock::new(Colony {
-            power_cap: 1000.0,
-            heat_budget: 120.0,
-            bandwidth: 1.0,
+            power_cap_kw: 1000.0,
+            bandwidth_total_gbps: 1.0,
             corruption_field: 0.0,
             target_uptime_days: 365,
+            meters: colony_core::GlobalMeters::new(),
+            tunables: colony_core::ResourceTunables::default(),
+            corruption_tun: colony_core::CorruptionTunables::default(),
+            seed: 12345,
         })),
     };
 
@@ -624,7 +627,8 @@ async fn save_manual(
     State(_state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let slot = params.get("slot").unwrap_or(&"manual_save".to_string());
+    let default_slot = "manual_save".to_string();
+    let slot = params.get("slot").unwrap_or(&default_slot);
     
     // In a real implementation, this would save to the specified slot
     Ok(Json(serde_json::json!({
@@ -637,7 +641,8 @@ async fn load_manual(
     State(_state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let slot = params.get("slot").unwrap_or(&"manual_save".to_string());
+    let default_slot = "manual_save".to_string();
+    let slot = params.get("slot").unwrap_or(&default_slot);
     
     // In a real implementation, this would load from the specified slot
     Ok(Json(serde_json::json!({
@@ -769,7 +774,8 @@ async fn reload_mod(
     State(_state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let mod_id = params.get("id").unwrap_or(&"unknown".to_string());
+    let default_mod_id = "unknown".to_string();
+    let mod_id = params.get("id").unwrap_or(&default_mod_id);
     
     // In a real implementation, this would trigger hot reload
     Ok(Json(serde_json::json!({
@@ -783,7 +789,8 @@ async fn enable_mod(
     State(_state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let mod_id = params.get("id").unwrap_or(&"unknown".to_string());
+    let default_mod_id = "unknown".to_string();
+    let mod_id = params.get("id").unwrap_or(&default_mod_id);
     let enabled = params.get("on").and_then(|v| v.parse::<bool>().ok()).unwrap_or(false);
     
     // In a real implementation, this would enable/disable the mod
@@ -798,7 +805,8 @@ async fn dryrun_mod(
     State(_state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let mod_id = params.get("id").unwrap_or(&"unknown".to_string());
+    let default_mod_id = "unknown".to_string();
+    let mod_id = params.get("id").unwrap_or(&default_mod_id);
     let ticks = params.get("ticks").and_then(|v| v.parse::<u32>().ok()).unwrap_or(120);
     
     // In a real implementation, this would run a dry run simulation
@@ -823,7 +831,8 @@ async fn get_mod_docs(
     State(_state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let mod_id = params.get("id").unwrap_or(&"all".to_string());
+    let default_mod_id = "all".to_string();
+    let mod_id = params.get("id").unwrap_or(&default_mod_id);
     
     // In a real implementation, this would return generated API docs
     Ok(Json(serde_json::json!({

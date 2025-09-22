@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use super::{Job, WorkClass};
+use super::Job;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EnqueuedJob {
@@ -95,7 +95,11 @@ pub fn starvation(now_tick: u64, enq_tick: u64, max_window: u64) -> f32 {
     if max_window == 0 {
         return 0.0;
     }
-    (((now_tick - enq_tick) as f32) / max_window as f32).clamp(0.0, 1.0)
+    if now_tick >= enq_tick {
+        (((now_tick - enq_tick) as f32) / max_window as f32).clamp(0.0, 1.0)
+    } else {
+        0.0
+    }
 }
 
 // Calculate average starvation for a queue

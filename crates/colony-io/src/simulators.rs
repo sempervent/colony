@@ -1,5 +1,6 @@
 use crate::{IoPacket, IoSimulatorConfig};
 use tokio::sync::mpsc;
+use bytes::Bytes;
 
 pub struct UdpSimulator {
     config: IoSimulatorConfig,
@@ -32,7 +33,11 @@ impl UdpSimulator {
                 20.0 + rand::random::<f32>() * 60.0
             );
 
-            let packet = IoPacket::Udp(telemetry_data.into_bytes());
+            let packet = IoPacket::Udp {
+                ts_ns: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
+                src: "127.0.0.1:1234".parse().unwrap(),
+                data: Bytes::from(telemetry_data.into_bytes()),
+            };
 
             // Simulate jitter
             if self.config.jitter_ms > 0 {
@@ -80,7 +85,16 @@ impl TcpSimulator {
                 \r\n"
             );
 
-            let packet = IoPacket::Tcp(bytes::Bytes::from(http_request));
+            let packet = IoPacket::HttpReq {
+                ts_ns: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
+                path: "/api/metrics".to_string(),
+                headers: vec![
+                    ("Host".to_string(), "localhost:8080".to_string()),
+                    ("User-Agent".to_string(), "Colony-Simulator/1.0".to_string()),
+                    ("Accept".to_string(), "application/json".to_string()),
+                ],
+                body: Bytes::from(http_request),
+            };
 
             // Simulate jitter
             if self.config.jitter_ms > 0 {

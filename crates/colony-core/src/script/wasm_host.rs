@@ -64,12 +64,12 @@ impl WasmHost {
         let module = self.modules.get(mod_id)
             .ok_or_else(|| anyhow::anyhow!("Module not found: {}", mod_id))?;
         
-        // Set fuel limit
-        self.store.add_fuel(self.execution_env.fuel_limit)?;
+        // Set fuel limit (TODO: Implement fuel system)
+        // self.store.add_fuel(self.execution_env.fuel_limit)?;
         
         // Create instance and execute
         let instance = Instance::new(&mut self.store, module, &[])?;
-        let func = instance.get_typed_func::<i32, i32>(&mut self.store, &op_spec.function_name)?;
+        let func = instance.get_typed_func::<i32, i32>(&mut self.store, &op_spec.name)?;
         
         // Execute the function (simplified)
         let result = func.call(&mut self.store, input.len() as i32)?;

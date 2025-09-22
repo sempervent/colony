@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
+use serde_json;
+// HashMap import removed - not used in this file
 
 #[derive(Serialize, Deserialize)]
 pub struct SaveFileV1 {

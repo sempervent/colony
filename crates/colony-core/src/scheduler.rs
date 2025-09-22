@@ -1,7 +1,8 @@
 use bevy::prelude::*;
-use super::{Job, Workyard, Worker, Op};
+use serde::{Serialize, Deserialize};
+use super::{Job, Workyard, Worker};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum SchedPolicy { 
     Fcfs, 
     Sjf, 
@@ -84,6 +85,26 @@ impl ActiveScheduler {
             SchedPolicy::Fcfs => Box::new(Fcfs),
             SchedPolicy::Sjf => Box::new(Sjf),
             SchedPolicy::Edf => Box::new(Edf),
+        }
+    }
+    
+    pub fn new_fcfs() -> Self {
+        Self { policy: SchedPolicy::Fcfs }
+    }
+    
+    pub fn new_sjf() -> Self {
+        Self { policy: SchedPolicy::Sjf }
+    }
+    
+    pub fn new_edf() -> Self {
+        Self { policy: SchedPolicy::Edf }
+    }
+    
+    pub fn get_name(&self) -> &'static str {
+        match self.policy {
+            SchedPolicy::Fcfs => "FCFS",
+            SchedPolicy::Sjf => "SJF",
+            SchedPolicy::Edf => "EDF",
         }
     }
 }

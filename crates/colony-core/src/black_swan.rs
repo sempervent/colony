@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
-use super::{Op, Pipeline, Debts, Debt};
+// HashMap import removed - not used in this file
+use super::{Debts, Debt};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TriggerCond {
@@ -97,8 +97,16 @@ impl BlackSwanIndex {
     }
 
     pub fn clear_expired_cooldowns(&mut self, current_tick: u64) {
+        // Collect cooldown ticks first to avoid borrowing issues
+        let cooldown_ticks: Vec<_> = self.meters.recently_fired.iter()
+            .map(|(id, _)| (id.clone(), self.get_cooldown_ticks(id)))
+            .collect();
+        
         self.meters.recently_fired.retain(|(id, fire_tick)| {
-            let cooldown_ticks = self.get_cooldown_ticks(id);
+            let cooldown_ticks = cooldown_ticks.iter()
+                .find(|(cooldown_id, _)| cooldown_id == id)
+                .map(|(_, ticks)| *ticks)
+                .unwrap_or(0);
             current_tick - fire_tick < cooldown_ticks
         });
     }

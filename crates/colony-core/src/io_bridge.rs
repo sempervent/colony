@@ -1,7 +1,7 @@
 use bevy::prelude::*;
-use colony_io::{IoSimulatorConfig, UdpSimulator, HttpSimulator, HttpParser, IoPacket, ParsedOp};
+use colony_io::{IoSimulatorConfig, UdpSimulator, HttpSimulator, HttpParser, IoPacket, ParsedOp, IoSource, IoParser};
 use tokio::sync::mpsc;
-use super::{Job, Pipeline, QoS, JobQueue, IoRolling};
+use super::{Job, QoS};
 
 #[derive(Resource, Clone)]
 pub struct IoRuntime {
@@ -35,13 +35,13 @@ pub async fn start_io_runtime(
     // Start UDP simulator
     let udp_sim = UdpSimulator::new(udp_cfg);
     tokio::spawn(async move {
-        udp_sim.run(udp_packet_tx, seed).await;
+        Box::new(udp_sim).run(udp_packet_tx, seed).await;
     });
     
     // Start HTTP simulator
     let http_sim = HttpSimulator::new(http_cfg);
     tokio::spawn(async move {
-        http_sim.run(http_packet_tx, seed + 1).await;
+        Box::new(http_sim).run(http_packet_tx, seed + 1).await;
     });
     
     // Start UDP framer (simple passthrough for now)
@@ -60,7 +60,7 @@ pub async fn start_io_runtime(
     // Start HTTP parser
     let http_parser = HttpParser::new();
     tokio::spawn(async move {
-        http_parser.start(http_packet_rx, http_ops_tx).await;
+        Box::new(http_parser).start(http_packet_rx, http_ops_tx).await;
     });
     
     // Job enqueuer for UDP

@@ -54,7 +54,7 @@ impl PipelineGenome {
     pub fn to_pipeline(&self) -> Pipeline {
         Pipeline {
             ops: self.ops.clone(),
-            mutation_tag: Some(self.gene.tags.clone()),
+            mutation_tag: Some(self.gene.tags.join(",")),
         }
     }
 }
@@ -80,17 +80,17 @@ impl Mutation {
 
 pub fn apply_mutation(genome: &mut PipelineGenome, mutation: Mutation) -> bool {
     match mutation {
-        Mutation::Insert(op, index) => {
+        Mutation::Insert(ref op, index) => {
             if index <= genome.ops.len() {
-                genome.ops.insert(index, op);
+                genome.ops.insert(index, op.clone());
                 genome.gene.add_tag(mutation.get_tag());
                 genome.gene.increment_generation();
                 return true;
             }
         }
-        Mutation::Replace(index, op) => {
+        Mutation::Replace(index, ref op) => {
             if index < genome.ops.len() {
-                genome.ops[index] = op;
+                genome.ops[index] = op.clone();
                 genome.gene.add_tag(mutation.get_tag());
                 genome.gene.increment_generation();
                 return true;
@@ -104,11 +104,11 @@ pub fn apply_mutation(genome: &mut PipelineGenome, mutation: Mutation) -> bool {
                 return true;
             }
         }
-        Mutation::BranchDualRun { adjudicator } => {
+        Mutation::BranchDualRun { ref adjudicator } => {
             // Create a dual-run branch by duplicating the pipeline and adding adjudicator
             let original_ops = genome.ops.clone();
             genome.ops.extend(original_ops);
-            genome.ops.push(adjudicator);
+            genome.ops.push(adjudicator.clone());
             genome.gene.add_tag(mutation.get_tag());
             genome.gene.increment_generation();
             return true;

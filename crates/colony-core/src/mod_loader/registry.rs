@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use colony_modsdk::{ModManifest, ModRegistry as SdkModRegistry};
+use colony_modsdk::ModManifest;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use anyhow::Result;

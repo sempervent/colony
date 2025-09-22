@@ -131,7 +131,7 @@ pub async fn run_modbus_sim(tx: mpsc::Sender<ModbusPdu>, cfg: ModbusSimConfig, s
         let jitter_ms = rng.gen_range(0..=cfg.jitter_ms) as f32;
         let total_delay = interval_ms + jitter_ms;
         
-        tokio::time::sleep(Duration::from_millis(total_delay as u64)).await);
+        tokio::time::sleep(Duration::from_millis(total_delay as u64)).await;
         
         // Simulate packet loss
         if rng.gen::<f32>() < cfg.loss {

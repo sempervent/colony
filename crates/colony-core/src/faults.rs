@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use serde::{Serialize, Deserialize};
 use super::{WorkerReport, FaultKind, Worker, Workyard, Op};
 use crate::corruption::{fault_probability, tick_rng, CorruptionTunables};
 use rand::Rng;
@@ -138,13 +139,57 @@ pub fn handle_fault(
                 kind: fault,
             });
         }
+        FaultKind::Thermal => {
+            // Thermal fault - worker needs cooling
+            worker.state = super::WorkerState::Recovering;
+            report_writer.send(WorkerReport::Fault {
+                worker_id: worker.id,
+                op,
+                kind: fault,
+            });
+        }
+        FaultKind::Power => {
+            // Power fault - worker needs power reset
+            worker.state = super::WorkerState::Recovering;
+            report_writer.send(WorkerReport::Fault {
+                worker_id: worker.id,
+                op,
+                kind: fault,
+            });
+        }
+        FaultKind::Corruption => {
+            // Corruption fault - data integrity issue
+            worker.state = super::WorkerState::Recovering;
+            report_writer.send(WorkerReport::Fault {
+                worker_id: worker.id,
+                op,
+                kind: fault,
+            });
+        }
+        FaultKind::Network => {
+            // Network fault - connectivity issue
+            report_writer.send(WorkerReport::Fault {
+                worker_id: worker.id,
+                op,
+                kind: fault,
+            });
+        }
+        FaultKind::Hardware => {
+            // Hardware fault - physical component failure
+            worker.state = super::WorkerState::Recovering;
+            report_writer.send(WorkerReport::Fault {
+                worker_id: worker.id,
+                op,
+                kind: fault,
+            });
+        }
     }
 }
 
 pub fn update_fault_kpis(
     mut kpis: ResMut<FaultKpi>,
     workers: Query<&Worker>,
-    report_reader: EventReader<WorkerReport>,
+    mut report_reader: EventReader<WorkerReport>,
 ) {
     // Count sticky workers
     kpis.sticky_workers = workers
@@ -161,6 +206,11 @@ pub fn update_fault_kpis(
                 FaultKind::DataSkew => kpis.data_skew_faults += 1,
                 FaultKind::StickyConfig => kpis.sticky_faults += 1,
                 FaultKind::QueueDrop => kpis.queue_drop_faults += 1,
+                FaultKind::Thermal => kpis.transient_faults += 1, // Count as transient for now
+                FaultKind::Power => kpis.transient_faults += 1, // Count as transient for now
+                FaultKind::Corruption => kpis.sticky_faults += 1, // Count as sticky for now
+                FaultKind::Network => kpis.transient_faults += 1, // Count as transient for now
+                FaultKind::Hardware => kpis.sticky_faults += 1, // Count as sticky for now
             }
         }
     }

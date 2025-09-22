@@ -9,6 +9,7 @@ bytes = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 rand = { workspace = true }
+rand_pcg = "0.3"
 chrono = { workspace = true }
 async-trait = "0.1"
-colony-core = { path = "../colony-core" }
+# colony-core dependency removed - not actually used

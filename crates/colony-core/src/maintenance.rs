@@ -13,5 +13,5 @@ pub fn enqueue_maintenance(yard_entity: Entity, jobq: &mut JobQueue) {
         payload_sz: 0, // No payload for maintenance
     };
     
-    jobq.push(maintenance_job);
+    jobq.push(maintenance_job, 0); // TODO: Pass actual current tick
 }

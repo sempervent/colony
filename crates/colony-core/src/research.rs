@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
+// HashMap import removed - not used in this file
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TechNode {
